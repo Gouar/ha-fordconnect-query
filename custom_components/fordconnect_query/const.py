@@ -13,8 +13,8 @@ FORD_TOKEN_URL: Final     = "https://api.vehicle.ford.com/dah2vb2cprod.onmicroso
 FORD_GARAGE_URL: Final    = "https://api.vehicle.ford.com/fcon-query/v1/garage"
 FORD_TELEMETRY_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/telemetry"
 
-NAME: Final = "Fordconnect for EU integration for Home Assistant"
-ISSUE_URL: Final = "https://github.com/marq24/ha-fordpass/issues"
+NAME: Final = "FordConnect Query (for EU) integration for Home Assistant"
+ISSUE_URL: Final = "https://github.com/marq24/ha-fordconnect-query/issues"
 MANUFACTURER_FORD: Final = "Ford Motor Company"
 MANUFACTURER_LINCOLN: Final = "Lincoln Motor Company"
 
@@ -39,6 +39,8 @@ CONF_LOG_TO_FILESYSTEM: Final = "log_to_filesystem"
 SCAN_INTERVAL_DEFAULT: Final = 60 #290 # it looks like that the default auto-access_token expires after 5 minutes (300 seconds)
 
 COORDINATOR_KEY: Final = "coordinator"
+LAST_TOKEN_KEY = "last_token"
+UPDATE_LISTENER_KEY = "update_listener"
 
 DEFAULT_PRESSURE_UNIT: Final = "kPa"
 PRESSURE_UNITS: Final = ["PSI", "kPa", "BAR"]

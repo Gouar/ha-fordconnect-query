@@ -9,12 +9,14 @@ import voluptuous as vol
 from custom_components.fordconnect_query.const import (
     DOMAIN,
     CONF_VIN,
+    CONF_PRESSURE_UNIT,
     FORD_TELEMETRY_URL,
     MANUFACTURER_FORD,
     MANUFACTURER_LINCOLN,
     COORDINATOR_KEY,
+    LAST_TOKEN_KEY,
+    UPDATE_LISTENER_KEY,
     TRANSLATIONS,
-    CONF_PRESSURE_UNIT,
     PRESSURE_UNITS,
     RCC_SEAT_MODE_NONE, RCC_SEAT_MODE_HEAT_AND_COOL, RCC_SEAT_MODE_HEAT_ONLY, STARTUP_MESSAGE, SCAN_INTERVAL_DEFAULT,
     DEFAULT_PRESSURE_UNIT, CONF_GARAGE_DATA
@@ -47,7 +49,7 @@ PLATFORMS = ["sensor", "device_tracker"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict):
-    hass.data.setdefault(DOMAIN, {})
+    #hass.data.setdefault(DOMAIN, {})
     return True
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
@@ -57,7 +59,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         _LOGGER.info(STARTUP_MESSAGE % intg_version)
         hass.data.setdefault(DOMAIN, {"manifest_version": intg_version})
 
-
     # continue with startup...
     vin = config_entry.data[CONF_VIN]
     for config_entry_data in config_entry.data:
@@ -65,7 +66,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
     update_interval_as_int = config_entry.data.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL_DEFAULT)
     _LOGGER.debug(f"[@{vin}] Update interval: {update_interval_as_int}")
-
 
     # creating our web-session...
     try:
@@ -86,13 +86,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     if not config_entry.options:
         await async_update_options(hass, config_entry)
 
-    fordconq_options_listener =config_entry.add_update_listener(entry_update_listener)
-
+    # Store the current token to compare in the update listener
+    current_token = config_entry.data.get("token", {}).get("access_token", None)
     hass.data[DOMAIN][config_entry.entry_id] = {
-        COORDINATOR_KEY: coordinator,
         CONF_VIN: vin,
-        "fordconq_options_listener": fordconq_options_listener
+        COORDINATOR_KEY: coordinator,
+        LAST_TOKEN_KEY: current_token
     }
+    # fordconq_options_listener = config_entry.add_update_listener(entry_update_listener)
+    # hass.data[DOMAIN][config_entry.entry_id][UPDATE_LISTENER_KEY] = fordconq_options_listener
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
@@ -102,6 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
 
 async def async_update_options(hass, config_entry):
+    _LOGGER.debug(f"async_update_options() called for entry: {config_entry.entry_id}")
     # the pressure unit is our only default...
     options = {
         CONF_PRESSURE_UNIT: config_entry.data.get(CONF_PRESSURE_UNIT, DEFAULT_PRESSURE_UNIT),
@@ -111,7 +114,22 @@ async def async_update_options(hass, config_entry):
 
 # we need to reload our entry on config changes...
 async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
-    _LOGGER.debug(f"entry_update_listener() called for entry: {config_entry.entry_id}")
+    _LOGGER.debug(f"entry_update_listener(): called for entry: {config_entry.entry_id}")
+
+    # Get the last known token from our data store
+    the_entry_data = hass.data[DOMAIN].get(config_entry.entry_id, {})
+    last_token = the_entry_data.get(LAST_TOKEN_KEY, None)
+
+    # Get the current token from the config entry
+    current_access_token = config_entry.data.get("token", {}).get("access_token", None)
+
+    # If the token has changed, update our store and skip the reload
+    if current_access_token != last_token:
+        _LOGGER.debug(f"entry_update_listener(): only 'access token' was updated, skipping reload.")
+        the_entry_data[LAST_TOKEN_KEY] = current_access_token
+        return
+
+    # only on 'none' access_token updates, reload the config_entry...
     await hass.config_entries.async_reload(config_entry.entry_id)
 
 
@@ -199,7 +217,6 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
         # moved from 1'st line to bottom...
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=update_interval_as_int), config_entry=config_entry)
 
-
     def tag_not_supported_by_vehicle(self, a_tag: Tag) -> bool:
         if a_tag in FUEL_OR_PEV_ONLY_TAGS:
             return self.supportFuel is False
@@ -258,11 +275,9 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
     def supportFuel(self) -> bool:
         return self._engine_type is not None and self._engine_type not in ["BEV"]
 
-
     async def clear_data(self):
         _LOGGER.debug(f"{self.vli}clear_data called...")
         self.data.clear()
-
 
     async def read_config_on_startup(self, hass: HomeAssistant):
         _LOGGER.debug(f"{self.vli}read_config_on_startup...")
@@ -388,8 +403,6 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
 
         return is_supported
 
-
-
     async def _async_update_data(self):
         _LOGGER.debug(f"{self.vli}_async_update_data(): Updating data for VIN: {self._vin}")
         now = time.monotonic()
@@ -401,7 +414,7 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
         await self._session.async_ensure_token_valid()
         some_data = await self.get_telemetry()
         if some_data is None:
-            raise UpdateFailed("No data received from Ford API")
+            raise UpdateFailed("No data received from Ford API (or exception/error)")
 
         self._last_update_time = time.monotonic()
         return some_data
@@ -414,18 +427,17 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
         try:
             res.raise_for_status()
             data = await res.json()
-            #_LOGGER.debug(f"get_telemetry(): {data}")
-
-            parsed = {ROOT_METRICS: data}
-            _LOGGER.debug(f"{self.vli}get_telemetry(): {len(data)}")
+            _LOGGER.debug(f"{self.vli}get_telemetry(): {len(data)} - {data.keys() if data is not None else 'None'}")
             return data
         except BaseException as e:
-            _LOGGER.error(f"{self.vli}get_telemetry(): {type(e).__name__} {e}")
-
-            stack_trace = traceback.format_stack()
-            stack_trace_str = ''.join(stack_trace[:-1])  # Exclude the call to this function
-            _LOGGER.info(f"{self.vli}the stack trace:\n{stack_trace_str}")
-
+            if res.status == 429:
+                _LOGGER.debug(f"{self.vli}get_telemetry(): {res.status} - rate limit exceeded - sleeping for 15 seconds")
+                self._last_update_time = time.monotonic()
+            else:
+                _LOGGER.info(f"{self.vli}get_telemetry(): {type(e).__name__} {e}")
+                stack_trace = traceback.format_stack()
+                stack_trace_str = ''.join(stack_trace[:-1])  # Exclude the call to this function
+                _LOGGER.debug(f"{self.vli}stack trace (for marq24 to be able to debug):\n{stack_trace_str}")
 
 
 class FordPassEntity(CoordinatorEntity):
@@ -498,7 +510,6 @@ class FordPassEntity(CoordinatorEntity):
             "model": f"{model}",
             "manufacturer": MANUFACTURER_LINCOLN if self.coordinator._is_brand_lincoln else MANUFACTURER_FORD
         }
-
 
     def _friendly_name_internal(self) -> str | None:
         """Return the friendly name.
