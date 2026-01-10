@@ -22,8 +22,13 @@ STATE_LOOKUP_MAP = "secure_state-to-flow_id-map"
 FORD_AUTHORIZE_URL: Final = "https://api.vehicle.ford.com/fcon-public/v1/auth/init"
 FORD_TOKEN_URL: Final     = "https://api.vehicle.ford.com/dah2vb2cprod.onmicrosoft.com/oauth2/v2.0/token?p=B2C_1A_FCON_AUTHORIZE"
 
-FORD_GARAGE_URL: Final    = "https://api.vehicle.ford.com/fcon-query/v1/garage"
+FORD_GARAGE_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/garage"
 FORD_TELEMETRY_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/telemetry"
+FORD_VEH_HEALTH_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/vehicle-health/alerts"
+FORD_WALLBOX_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/wallbox"
+FORD_EV_DEPARTURE_TIMES_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/electric/departure-times"
+FORD_EV_CHARGE_SCHEDULES_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/electric/charge-schedules"
+FORD_EV_SESSIONS_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/fccs?startDate={start}&endDate={end}"
 
 TRANSLATIONS: Final = {
     "de":{

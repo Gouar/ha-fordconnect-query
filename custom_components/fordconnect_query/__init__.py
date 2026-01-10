@@ -6,7 +6,7 @@ import time
 import traceback
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
@@ -29,6 +29,7 @@ from custom_components.fordconnect_query.const import (
     DOMAIN,
     CONF_VIN,
     FORD_TELEMETRY_URL,
+    FORD_VEH_HEALTH_URL,
     LAST_TOKEN_KEY,
     TRANSLATIONS,
     DEFAULT_SCAN_INTERVAL,
@@ -50,18 +51,23 @@ from custom_components.fordconnect_query.fordpass_handler import (
     ROOT_METRICS,
     ROOT_MESSAGES,
     ROOT_VEHICLES,
+    ROOT_UPDTIME,
     FordpassDataHandler
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-CONFIG_SCHEMA = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
+CONFIG_SCHEMA:Final = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA)
 #PLATFORMS = ["button", "lock", "number", "sensor", "switch", "select", "device_tracker"]
-PLATFORMS = ["sensor", "device_tracker"]
+PLATFORMS:Final = ["sensor", "device_tracker"]
 
-DATA_STORAGE_KEY = "temp_data_storage"
-TIME_KEY = "time"
-DATA_KEY = "data"
+DATA_STORAGE_KEY:Final = "temp_data_storage"
+TIME_KEY:Final = "time"
+DATA_KEY:Final = "data"
+RATE_LIMIT_INDICATOR:Final = "RATE_LIMIT"
+
+OAUTH_TOKEN_KEY:Final = "token"
+OAUTH_ACCESS_TOKEN_KEY:Final = "access_token"
 
 async def async_setup(hass: HomeAssistant, config: dict):
     #hass.data.setdefault(DOMAIN, {})
@@ -97,25 +103,29 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
     # check if we can/must restore the last update time...
     temp_data_store = hass.data.setdefault(DOMAIN, {}).setdefault(DATA_STORAGE_KEY, {})
+    restored_data = None
     if vin in temp_data_store:
-        _LOGGER.debug(f"[@{vin}] Restoring data & last_update_time from temp data store...")
         coordinator._last_update_time = temp_data_store[vin][TIME_KEY]
-        coordinator.data = temp_data_store[vin][DATA_KEY]
+        restored_data = temp_data_store[vin][DATA_KEY]
+        if restored_data is not None:
+            coordinator.async_set_updated_data(restored_data)
+            _LOGGER.debug(f"[@{vin}] Data restored: {len(coordinator.data)} {coordinator.data.keys()}")
         temp_data_store.pop(vin)
 
-    # init our coordinator...
-    await coordinator.async_refresh()
-    if not coordinator.last_update_success:
-        raise ConfigEntryNotReady("")
-    else:
-        await coordinator.read_config_on_startup(hass)
+    if restored_data is None:
+        # init our coordinator...
+        await coordinator.async_refresh()
+        if not coordinator.last_update_success:
+            raise ConfigEntryNotReady("")
+
+    await coordinator.read_config_on_startup(hass)
 
     # make sure our default options are set...
     if not config_entry.options:
         await async_update_options(hass, config_entry)
 
     # Store the current token to compare in the update listener
-    current_token = config_entry.data.get("token", {}).get("access_token", None)
+    current_token = config_entry.data.get(OAUTH_TOKEN_KEY, {}).get(OAUTH_ACCESS_TOKEN_KEY, None)
     hass.data[DOMAIN][config_entry.entry_id] = {
         CONF_VIN: vin,
         COORDINATOR_KEY: coordinator,
@@ -147,7 +157,7 @@ async def entry_update_listener(hass: HomeAssistant, config_entry: ConfigEntry) 
     last_token = the_entry_data.get(LAST_TOKEN_KEY, None)
 
     # Get the current token from the config entry
-    current_access_token = config_entry.data.get("token", {}).get("access_token", None)
+    current_access_token = config_entry.data.get(OAUTH_TOKEN_KEY, {}).get(OAUTH_ACCESS_TOKEN_KEY, None)
 
     # If the token has changed, update our store and skip the reload
     if current_access_token != last_token:
@@ -167,10 +177,10 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     if unload_ok:
         if DOMAIN in hass.data and config_entry.entry_id in hass.data[DOMAIN]:
             coordinator = hass.data[DOMAIN][config_entry.entry_id][COORDINATOR_KEY]
-            # storing our last update time...
+            # storing our last update time and a copy of the data.container...
             hass.data.setdefault(DOMAIN, {}).setdefault(DATA_STORAGE_KEY, {})[coordinator._vin] = {
                 TIME_KEY: coordinator._last_update_time,
-                DATA_KEY: coordinator.data
+                DATA_KEY: coordinator.data.copy()
             }
             await coordinator.clear_data()
             hass.data[DOMAIN].pop(config_entry.entry_id)
@@ -444,35 +454,70 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
 
         # IMHO this is not required for an OAuth2Session
         await self._session.async_ensure_token_valid()
-        some_data = await self.request_telemetry()
-        if some_data is None:
+        telemetry_data = await self.request_telemetry()
+        if telemetry_data is None or telemetry_data == RATE_LIMIT_INDICATOR:
             raise UpdateFailed("No data received from Ford API (or exception/error)")
+        else:
+            pass
+            # health_data = await self.request_health()
+            # if health_data is not None and "VehicleAlertList" in health_data:
+            #     # I need some sample data with content... :-/
+            #     for a_alert in health_data["VehicleAlertList"]:
+            #         a_alert_list = a_alert.get("ActiveAlerts", [])
+            #         if len(a_alert_list) > 0:
+            #             # the plan is to extract here the 'ActiveAlerts' and then insert them as
+            #             # 'indicators' in the ROOT_META...
+            #             pass
 
-        if self._log_to_filesystem:
-            try:
-                await asyncio.get_running_loop().run_in_executor(None, lambda: self.__dump_data("telemetry", some_data))
-            except BaseException as e:
-                _LOGGER.debug(f"{self.vli}Error while writing telemetry data to file: {type(e).__name__} - {e}")
+        if telemetry_data is not None:
+            self._last_update_time = time.monotonic()
+            return telemetry_data
+            # result = {}
+            # if ROOT_METRICS in telemetry_data:
+            #     result[ROOT_METRICS] = telemetry_data[ROOT_METRICS]
+            # if ROOT_UPDTIME in telemetry_data:
+            #     result[ROOT_UPDTIME] = telemetry_data[ROOT_UPDTIME]
+            # return result
 
-        self._last_update_time = time.monotonic()
-        return some_data
+        return self.data
 
     async def request_telemetry(self):
+        telemetry_data = await self.__request_data(FORD_TELEMETRY_URL, "telemetry")
+        return telemetry_data
+
+    async def request_health(self):
+        health_data = await self.__request_data(FORD_VEH_HEALTH_URL, "health")
+        return health_data
+
+    async def __request_data(self, url:str, type:str):
         res = await self._session.async_request(
             method="get",
-            url=FORD_TELEMETRY_URL
+            url=url
         )
         try:
             res.raise_for_status()
-            data = await res.json()
-            _LOGGER.debug(f"{self.vli}get_telemetry(): {len(data)} - {data.keys() if data is not None else 'None'}")
-            return data
+            response_data = await res.json()
+            if response_data is not None:
+                _LOGGER.debug(f"{self.vli}request_{type}(): {len(response_data)} - {response_data.keys() if response_data is not None else 'None'}")
+            else:
+                _LOGGER.debug(f"{self.vli}request_{type}(): No data received!")
+
+            # dumping?
+            if self._log_to_filesystem and response_data is not None:
+                try:
+                    await asyncio.get_running_loop().run_in_executor(None, lambda: self.__dump_data(type, response_data))
+                except BaseException as e:
+                    _LOGGER.debug(f"{self.vli}Error while dumping {type} data to file: {type(e).__name__} - {e}")
+
+            return response_data
+
         except BaseException as e:
             if res.status == 429:
-                _LOGGER.debug(f"{self.vli}get_telemetry(): {res.status} - rate limit exceeded - sleeping for 15 seconds")
+                _LOGGER.debug(f"{self.vli}request_{type}():{url} caused {res.status} - rate limit exceeded - sleeping for 15 seconds")
                 self._last_update_time = time.monotonic()
+                return RATE_LIMIT_INDICATOR
             else:
-                _LOGGER.info(f"{self.vli}get_telemetry(): {type(e).__name__} {e}")
+                _LOGGER.info(f"{self.vli}request_{type}():{url} caused {type(e).__name__} {e}")
                 stack_trace = traceback.format_stack()
                 stack_trace_str = ''.join(stack_trace[:-1])  # Exclude the call to this function
                 _LOGGER.debug(f"{self.vli}stack trace (for marq24 to be able to debug):\n{stack_trace_str}")

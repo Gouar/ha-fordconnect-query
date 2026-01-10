@@ -16,7 +16,7 @@ If you find this integration useful, please consider supporting me as a GitHub p
 -->
 <!--
 ## Willkommen zur FordConnect Query Integration
-Dies ist eine [alternative Integration zu FordPass](https://github.com/marq24/ha-fordpass) und nutzt die FordConnect Query API. Diese API bietet __read.only__ Zugriff auf Deine Fahrzeugdaten.
+Dies ist eine [alternative Integration zu FordPass](https://github.com/marq24/ha-fordpass), die die FordConnect Query API nutzt. Diese API bietet __read.only__ Zugriff auf Deine Fahrzeugdaten.
 ### Voraussetzungen
 - Dein Fahrzeug muss über die neueste On-Board-Modem-Funktionalität verfügen und bei der FordPass™-Anwendung registriert/autorisiert sein.
 - Einen API-Schlüssel, der zuvor im EU-Ford-Entwicklerportal registriert wurde.
