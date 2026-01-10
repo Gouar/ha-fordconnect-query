@@ -5,30 +5,6 @@ from datetime import timedelta
 from typing import Any
 
 import voluptuous as vol
-
-from custom_components.fordconnect_query.const import (
-    DOMAIN,
-    CONF_VIN,
-    CONF_PRESSURE_UNIT,
-    FORD_TELEMETRY_URL,
-    MANUFACTURER_FORD,
-    MANUFACTURER_LINCOLN,
-    COORDINATOR_KEY,
-    LAST_TOKEN_KEY,
-    UPDATE_LISTENER_KEY,
-    TRANSLATIONS,
-    PRESSURE_UNITS,
-    RCC_SEAT_MODE_NONE, RCC_SEAT_MODE_HEAT_AND_COOL, RCC_SEAT_MODE_HEAT_ONLY, STARTUP_MESSAGE, SCAN_INTERVAL_DEFAULT,
-    DEFAULT_PRESSURE_UNIT, CONF_GARAGE_DATA
-)
-from custom_components.fordconnect_query.const_tags import Tag, FUEL_OR_PEV_ONLY_TAGS, EV_ONLY_TAGS, RCC_TAGS
-from custom_components.fordconnect_query.fordpass_handler import (
-    UNSUPPORTED,
-    ROOT_METRICS,
-    ROOT_MESSAGES,
-    ROOT_VEHICLES,
-    FordpassDataHandler
-)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfPressure, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
@@ -40,6 +16,35 @@ from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import UpdateFailed, DataUpdateCoordinator, CoordinatorEntity
 from homeassistant.loader import async_get_integration
 from homeassistant.util.unit_system import UnitSystem
+
+from custom_components.fordconnect_query.const import (
+    DOMAIN,
+    CONF_VIN,
+    FORD_TELEMETRY_URL,
+    LAST_TOKEN_KEY,
+    TRANSLATIONS,
+    SCAN_INTERVAL_DEFAULT,
+    CONF_GARAGE_DATA
+)
+from custom_components.fordconnect_query.const_shared import (
+    CONF_PRESSURE_UNIT,
+    MANUFACTURER_FORD,
+    MANUFACTURER_LINCOLN,
+    COORDINATOR_KEY,
+    TRANSLATIONS,
+    PRESSURE_UNITS,
+    RCC_SEAT_MODE_NONE, RCC_SEAT_MODE_HEAT_AND_COOL, RCC_SEAT_MODE_HEAT_ONLY,
+    STARTUP_MESSAGE,
+    DEFAULT_PRESSURE_UNIT,
+)
+from custom_components.fordconnect_query.const_tags import Tag, FUEL_OR_PEV_ONLY_TAGS, EV_ONLY_TAGS, RCC_TAGS
+from custom_components.fordconnect_query.fordpass_handler import (
+    UNSUPPORTED,
+    ROOT_METRICS,
+    ROOT_MESSAGES,
+    ROOT_VEHICLES,
+    FordpassDataHandler
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -93,8 +98,6 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
         COORDINATOR_KEY: coordinator,
         LAST_TOKEN_KEY: current_token
     }
-    # fordconq_options_listener = config_entry.add_update_listener(entry_update_listener)
-    # hass.data[DOMAIN][config_entry.entry_id][UPDATE_LISTENER_KEY] = fordconq_options_listener
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 

@@ -4,15 +4,17 @@ from dataclasses import replace
 from numbers import Number
 from typing import Any
 
-from custom_components.fordconnect_query import FordPassEntity, FordConQDataCoordinator, ROOT_METRICS
-from custom_components.fordconnect_query.const import DOMAIN, COORDINATOR_KEY
-from custom_components.fordconnect_query.const_tags import SENSORS, ExtSensorEntityDescription, Tag
-from custom_components.fordconnect_query.fordpass_handler import UNSUPPORTED
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.restore_state import RestoreEntity, async_get, StoredState
+
+from custom_components.fordconnect_query import FordPassEntity, FordConQDataCoordinator, ROOT_METRICS
+from custom_components.fordconnect_query.const import DOMAIN
+from custom_components.fordconnect_query.const_shared import COORDINATOR_KEY
+from custom_components.fordconnect_query.const_tags import SENSORS, ExtSensorEntityDescription, Tag
+from custom_components.fordconnect_query.fordpass_handler import UNSUPPORTED
 
 _LOGGER = logging.getLogger(__name__)
 
