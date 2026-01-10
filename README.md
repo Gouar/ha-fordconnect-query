@@ -258,9 +258,9 @@ logger:
 
 If you miss entities or functionality, please check if there is any data available in the FordPass™/The Lincoln Way™ App. If there is no data available in the FordPass™/The Lincoln Way™ App, then there might be good reasons why there is no data available for this integration either. Please be aware that not all vehicles support all features, so it's possible that some entities are not available for your vehicle.
 
-You can enable the __Log API responses to local HA filesystem__ in the integration configuration. This will log all API responses to the local HA filesystem, which can be helpful for any data debugging purposes. The log files will be stored in the `.storage/fordpass/data_dumps` directory of your Home Assistant installation.
+You can enable the __Log API responses to local HA filesystem__ in the integration configuration. This will log all API responses to the local HA filesystem, which can be helpful for any data debugging purposes. The log files will be stored in the `.storage/fordconnect_query/data_dumps` directory of your Home Assistant installation.
 
-![image](./images/011.png)
+![image](https://raw.githubusercontent.com/marq24/ha-fordpass/refs/heads/main/images/011.png)
 
 When you create an issue, please consider:
 - the data can contain sensitive information  do not post any of the files in the issue.

@@ -1,4 +1,5 @@
 import logging
+from numbers import Number
 from typing import Any
 
 import aiohttp
@@ -18,7 +19,7 @@ from custom_components.fordconnect_query.const import (
     CONF_VIN,
     CONF_TITLE,
     CONF_GARAGE_DATA,
-    DEFAULT_SCAN_INTERVAL
+    DEFAULT_SCAN_INTERVAL, MIN_SCAN_INTERVAL
 )
 from custom_components.fordconnect_query.const_shared import (
     DEFAULT_PRESSURE_UNIT,
@@ -135,13 +136,12 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
 class FordConQOptionsFlowHandler(OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
-        if len(dict(config_entry.options)) == 0:
-            self._options = dict(config_entry.data)
-        else:
-            self._options = dict(config_entry.options)
+        self._options = dict(config_entry.options)
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:
+            if CONF_SCAN_INTERVAL in user_input and isinstance(user_input[CONF_SCAN_INTERVAL], Number):
+                user_input[CONF_SCAN_INTERVAL] = max(int(user_input[CONF_SCAN_INTERVAL]), MIN_SCAN_INTERVAL)
             return self.async_create_entry(title="", data=user_input)
 
         options = {vol.Optional(CONF_PRESSURE_UNIT, default=self._options.get(CONF_PRESSURE_UNIT, DEFAULT_PRESSURE_UNIT),): vol.In(PRESSURE_UNITS),

@@ -1,7 +1,11 @@
+import asyncio
+import json
 import logging
+import os
 import time
 import traceback
-from datetime import timedelta
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -15,6 +19,7 @@ from homeassistant.helpers.config_entry_oauth2_flow import (
     async_get_config_entry_implementation
 )
 from homeassistant.helpers.entity import EntityDescription
+from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import UpdateFailed, DataUpdateCoordinator, CoordinatorEntity
 from homeassistant.loader import async_get_integration
@@ -37,7 +42,7 @@ from custom_components.fordconnect_query.const_shared import (
     PRESSURE_UNITS,
     RCC_SEAT_MODE_NONE, RCC_SEAT_MODE_HEAT_AND_COOL, RCC_SEAT_MODE_HEAT_ONLY,
     STARTUP_MESSAGE,
-    DEFAULT_PRESSURE_UNIT,
+    DEFAULT_PRESSURE_UNIT, CONF_LOG_TO_FILESYSTEM,
 )
 from custom_components.fordconnect_query.const_tags import Tag, FUEL_OR_PEV_ONLY_TAGS, EV_ONLY_TAGS, RCC_TAGS
 from custom_components.fordconnect_query.fordpass_handler import (
@@ -71,7 +76,8 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     for config_entry_data in config_entry.data:
         _LOGGER.debug(f"[@{vin}] config_entry.data: {config_entry_data}")
 
-    update_interval_as_int = config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+    # in the fordconnect negation we only have the update interval in the options
+    update_interval_as_int = config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     _LOGGER.debug(f"[@{vin}] Update interval: {update_interval_as_int}")
 
     # creating our web-session...
@@ -178,10 +184,14 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
             self.lang_map = TRANSLATIONS["en"]
 
         self._available = True
-        self._reauth_requested = False
         self._is_brand_lincoln = False # now hardcoded
         self._engine_type = None
         self._number_of_lighting_zones = 0
+        self._log_to_filesystem = config_entry.options.get(CONF_LOG_TO_FILESYSTEM, False)
+        if self._log_to_filesystem:
+            self._storage_path = Path(hass.config.config_dir).joinpath(STORAGE_DIR)
+
+        # different supporting booleans - probably none of them will be usefull in FordConnect?!
         self._supports_GUARD_MODE = None
         self._supports_REMOTE_START = None
         self._supports_ZONE_LIGHTING = None
@@ -189,7 +199,6 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
         self._supports_GEARLEVERPOSITION = None
         self._supports_AUTO_UPDATES = None
         self._supports_HAF = None
-        self._force_REMOTE_CLIMATE_CONTROL = False  # now hardcoded
         self._supports_REMOTE_CLIMATE_CONTROL = None
         self._supports_HEATED_STEERING_WHEEL = None
         self._supports_HEATED_HEATED_SEAT_MODE = None
@@ -219,9 +228,7 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
                     wind_speed=orig.wind_speed_unit,
                 )
 
-        self._watchdog = None
         self._a_task = None
-        self._force_classic_requests = False
 
         # moved from 1'st line to bottom...
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=timedelta(seconds=update_interval_as_int), config_entry=config_entry)
@@ -421,14 +428,20 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
 
         # IMHO this is not required for an OAuth2Session
         await self._session.async_ensure_token_valid()
-        some_data = await self.get_telemetry()
+        some_data = await self.request_telemetry()
         if some_data is None:
             raise UpdateFailed("No data received from Ford API (or exception/error)")
+
+        if self._log_to_filesystem:
+            try:
+                await asyncio.get_running_loop().run_in_executor(None, lambda: self.__dump_data("telemetry", some_data))
+            except BaseException as e:
+                _LOGGER.debug(f"{self.vli}Error while writing telemetry data to file: {type(e).__name__} - {e}")
 
         self._last_update_time = time.monotonic()
         return some_data
 
-    async def get_telemetry(self):
+    async def request_telemetry(self):
         res = await self._session.async_request(
             method="get",
             url=FORD_TELEMETRY_URL
@@ -448,6 +461,22 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
                 stack_trace_str = ''.join(stack_trace[:-1])  # Exclude the call to this function
                 _LOGGER.debug(f"{self.vli}stack trace (for marq24 to be able to debug):\n{stack_trace_str}")
 
+    def __dump_data(self, type:str, data:dict):
+        a_datetime = datetime.now(timezone.utc)
+        filename = str(self._storage_path.joinpath(DOMAIN, "data_dumps", self._vin,
+                                                   f"{a_datetime.year}", f"{a_datetime.month:02d}",
+                                                   f"{a_datetime.day:02d}", f"{a_datetime.hour:02d}",
+                                                   f"{a_datetime.strftime('%Y-%m-%d_%H-%M-%S.%f')[:-3]}_{type}.json"))
+        try:
+            directory = os.path.dirname(filename)
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            #file_path = os.path.join(os.getcwd(), filename)
+            with open(filename, "w", encoding="utf-8") as outfile:
+                json.dump(data, outfile, indent=4)
+        except BaseException as e:
+            _LOGGER.info(f"{self.vli}__dump_data(): Error while writing data to file '{filename}' - {type(e).__name__} - {e}")
 
 class FordPassEntity(CoordinatorEntity):
     """Defines a base FordPass entity."""

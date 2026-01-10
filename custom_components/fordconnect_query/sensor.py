@@ -57,16 +57,17 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry, asyn
                     _LOGGER.debug(f"{coordinator.vli}SENSOR ignoring prev value for key {a_entity_description.tag.key}: caused {type(exc).__name__} value is: {type(restored_state.state).__name__} {restored_state.state} - {exc}")
                     sensor._previous_state = None
 
-        if a_entity_description.skip_existence_check or not check_data_availability:
+        # if a_entity_description.skip_existence_check or not check_data_availability:
+        #     sensors.append(sensor)
+        # else:
+
+        # calling the state reading function to check if the sensor should be added (if there is any data)
+        value = a_entity_description.tag.state_fn(coordinator.data, None)
+        if value is not None and ((isinstance(value, (str, Number)) and str(value) != UNSUPPORTED) or
+                                  (isinstance(value, (dict, list)) and len(value) != 0) ):
             sensors.append(sensor)
         else:
-            # calling the state reading function to check if the sensor should be added (if there is any data)
-            value = a_entity_description.tag.state_fn(coordinator.data, None)
-            if value is not None and ((isinstance(value, (str, Number)) and str(value) != UNSUPPORTED) or
-                                      (isinstance(value, (dict, list)) and len(value) != 0) ):
-                sensors.append(sensor)
-            else:
-                _LOGGER.debug(f"{coordinator.vli}SENSOR '{a_entity_description.tag}' skipping cause no data available: type: {type(value).__name__} - value:'{value}'")
+            _LOGGER.debug(f"{coordinator.vli}SENSOR '{a_entity_description.tag}' skipping cause no data available: type: {type(value).__name__} - value:'{value}'")
 
     async_add_entities(sensors, True)
 
