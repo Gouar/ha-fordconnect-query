@@ -20,7 +20,7 @@ COORDINATOR_KEY: Final = "coordinator"
 CONF_LOG_TO_FILESYSTEM: Final = "log_to_filesystem"
 
 CONF_PRESSURE_UNIT: Final = "pressure_unit"
-DEFAULT_PRESSURE_UNIT: Final = "kPa"
+DEFAULT_PRESSURE_UNIT: Final = "BAR"
 PRESSURE_UNITS: Final = ["PSI", "kPa", "BAR"]
 
 WINDOW_POSITIONS: Final = {

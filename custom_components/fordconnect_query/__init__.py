@@ -9,8 +9,11 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfPressure, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.config_entry_oauth2_flow import ImplementationUnavailableError, OAuth2Session, \
+from homeassistant.helpers.config_entry_oauth2_flow import (
+    # ImplementationUnavailableError,
+    OAuth2Session,
     async_get_config_entry_implementation
+)
 from homeassistant.helpers.entity import EntityDescription
 from homeassistant.helpers.typing import UNDEFINED, UndefinedType
 from homeassistant.helpers.update_coordinator import UpdateFailed, DataUpdateCoordinator, CoordinatorEntity
@@ -23,7 +26,7 @@ from custom_components.fordconnect_query.const import (
     FORD_TELEMETRY_URL,
     LAST_TOKEN_KEY,
     TRANSLATIONS,
-    SCAN_INTERVAL_DEFAULT,
+    DEFAULT_SCAN_INTERVAL,
     CONF_GARAGE_DATA
 )
 from custom_components.fordconnect_query.const_shared import (
@@ -31,7 +34,6 @@ from custom_components.fordconnect_query.const_shared import (
     MANUFACTURER_FORD,
     MANUFACTURER_LINCOLN,
     COORDINATOR_KEY,
-    TRANSLATIONS,
     PRESSURE_UNITS,
     RCC_SEAT_MODE_NONE, RCC_SEAT_MODE_HEAT_AND_COOL, RCC_SEAT_MODE_HEAT_ONLY,
     STARTUP_MESSAGE,
@@ -69,14 +71,18 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
     for config_entry_data in config_entry.data:
         _LOGGER.debug(f"[@{vin}] config_entry.data: {config_entry_data}")
 
-    update_interval_as_int = config_entry.data.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL_DEFAULT)
+    update_interval_as_int = config_entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
     _LOGGER.debug(f"[@{vin}] Update interval: {update_interval_as_int}")
 
     # creating our web-session...
     try:
         implementation = await async_get_config_entry_implementation(hass, config_entry)
-    except ImplementationUnavailableError as err:
-        raise ConfigEntryNotReady(translation_domain=DOMAIN, translation_key="oauth2_implementation_unavailable") from err
+    except ValueError as err:
+        if "implementation not available" in str(err).lower():
+            raise ConfigEntryNotReady(translation_domain=DOMAIN, translation_key="oauth2_implementation_unavailable") from err
+        else:
+            _LOGGER.error(f"Unknown error occurred: {err}")
+            raise ConfigEntryNotReady(translation_domain=DOMAIN, translation_key="oauth2_implementation_unavailable") from err
     session = OAuth2Session(hass, config_entry, implementation)
     coordinator = FordConQDataCoordinator(hass, session, config_entry, update_interval_as_int=update_interval_as_int)
 

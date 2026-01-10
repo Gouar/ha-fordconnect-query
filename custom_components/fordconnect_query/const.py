@@ -12,7 +12,9 @@ CONFIG_MINOR_VERSION: Final = 0
 
 CONF_VIN = "vin"
 CONF_GARAGE_DATA = "garage"
-SCAN_INTERVAL_DEFAULT: Final = 60
+CONF_TITLE = "config_title"
+DEFAULT_SCAN_INTERVAL: Final = 60
+MIN_SCAN_INTERVAL: Final = 30
 
 LAST_TOKEN_KEY = "last_token"
 STATE_LOOKUP_MAP = "secure_state-to-flow_id-map"

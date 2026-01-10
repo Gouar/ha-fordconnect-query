@@ -2,8 +2,11 @@ import logging
 from typing import Any
 
 import aiohttp
-from homeassistant.config_entries import ConfigFlowResult
-from homeassistant.const import CONF_ACCESS_TOKEN, CONF_NAME, CONF_TOKEN
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
+from homeassistant.const import CONF_ACCESS_TOKEN, CONF_NAME, CONF_TOKEN, CONF_SCAN_INTERVAL, CONF_USERNAME
+from homeassistant.core import callback
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
@@ -13,10 +16,19 @@ from custom_components.fordconnect_query.const import (
     CONFIG_MINOR_VERSION,
     FORD_GARAGE_URL,
     CONF_VIN,
-    CONF_GARAGE_DATA
+    CONF_TITLE,
+    CONF_GARAGE_DATA,
+    DEFAULT_SCAN_INTERVAL
+)
+from custom_components.fordconnect_query.const_shared import (
+    DEFAULT_PRESSURE_UNIT,
+    PRESSURE_UNITS,
+    CONF_PRESSURE_UNIT,
+    CONF_LOG_TO_FILESYSTEM,
 )
 
 _LOGGER = logging.getLogger(__name__)
+TITLE_MAP = "title_map"
 
 class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DOMAIN):
     DOMAIN = DOMAIN
@@ -44,7 +56,9 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
                     CONF_NAME: garage_data.get("vehicleType", "Ford Vehicle"),
                     CONF_GARAGE_DATA: garage_data
                 }
-                return self.async_create_entry(title=f"{garage_data.get('color', 'A FordConnect')} {garage_data.get('modelName', '')}".strip(), data=entry_data)
+                a_fallback_title = f"{garage_data.get('color', 'A FordConnect')} {garage_data.get('modelName', '')}".strip()
+                a_title = self.hass.data.get(DOMAIN, {}).get(TITLE_MAP, {}).get(self.flow_id, a_fallback_title)
+                return self.async_create_entry(title=a_title, data=entry_data)
             else:
                 _LOGGER.error("async_oauth_create_entry(): No VIN received from oAuth provider")
                 return self.async_abort(reason="No VIN received from oAuth provider")
@@ -74,22 +88,63 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
             _LOGGER.error(f"get_garage(): caused {type(e).__name__} {e}")
 
     async def async_step_user(self, user_input=None):
-        return await super().async_step_user(user_input)
+        return await self.async_step_user_connect()
+
+    async def async_step_user_connect(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Handle the initial step."""
+        errors = {}
+
+        if user_input is not None:
+            # we store the title to use it later...
+            self.hass.data.setdefault(DOMAIN, {}).setdefault(TITLE_MAP, {})[self.flow_id] = user_input[CONF_TITLE]
+            # starting again with a plain entry
+            return await super().async_step_user(None)
+
+        return self.async_show_form(
+            step_id="user_connect",
+            data_schema=vol.Schema({
+                vol.Required(CONF_TITLE, default="FordConnect Query"): str,
+            }),
+            errors=errors
+            )
+
 
     async def async_step_reauth(self, entry_data):
         """Perform reauth upon migration of old entries."""
-        return await self.async_step_reauth_confirm()
+        return await self.async_step_reauth_confirm_connect()
 
-    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_reauth_confirm_connect(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Confirm reauth dialog."""
         reauth_entry = self._get_reauth_entry()
         if user_input is None:
             return self.async_show_form(
-                step_id="reauth_confirm",
-                description_placeholders={"account": reauth_entry.data["id"]},
+                step_id="reauth_confirm_connect",
+                description_placeholders={CONF_USERNAME: reauth_entry.data.get(CONF_VIN, "Unknown Vehicle")},
                 errors={},
             )
+        else:
+            return await super().async_step_pick_implementation(None)
 
-        return await self.async_step_pick_implementation(
-            user_input={"implementation": reauth_entry.data["auth_implementation"]}
-        )
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options' flow for this handler."""
+        return FordConQOptionsFlowHandler(config_entry)
+
+
+class FordConQOptionsFlowHandler(OptionsFlow):
+    def __init__(self, config_entry: config_entries.ConfigEntry):
+        """Initialize options flow."""
+        if len(dict(config_entry.options)) == 0:
+            self._options = dict(config_entry.data)
+        else:
+            self._options = dict(config_entry.options)
+
+    async def async_step_init(self, user_input=None):
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options = {vol.Optional(CONF_PRESSURE_UNIT, default=self._options.get(CONF_PRESSURE_UNIT, DEFAULT_PRESSURE_UNIT),): vol.In(PRESSURE_UNITS),
+                   vol.Optional(CONF_LOG_TO_FILESYSTEM, default=self._options.get(CONF_LOG_TO_FILESYSTEM, False),): bool,
+                   vol.Optional(CONF_SCAN_INTERVAL, default=self._options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL), ): int}
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(options), description_placeholders={"integration_name": "fordconnect_query"})

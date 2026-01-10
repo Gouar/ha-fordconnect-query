@@ -1,5 +1,33 @@
 # FordConnect Query Home Assistant Integration 2026 (EV/PHEV/Petrol/Diesel)
 ## Supporting all Ford vehicles with FordPass™ connectivity
+<!--
+
+## Welcome to the FordConnect Query Integration
+This is an alternative [integration to FordPass](https://github.com/marq24/ha-fordpass), making use of the FordConnect Query API. This API provides __read-only__ access to the vehicle data.
+### Requirements
+- Your car must have the latest on-board modem functionality and have been registered/authorized with the FordPass™ application
+- An API credential pair previously registered with the EU Ford developer portal.
+
+Further information can be found in [_the Application Registration Guide_. This includes a step-by-step procedure](https://github.com/marq24/ha-fordconnect-query/blob/main/docs/REGISTER_APPLICATION.md) to register an application at Fords EU developer portal.
+### Need further instructions?
+All other setup details can be found in the [Integration Setup Guide](https://github.com/marq24/ha-fordconnect-query/blob/main/docs/CONFIGURE_INTEGRATION.md)
+### Final note
+If you find this integration useful, please consider supporting me as a GitHub project sponsor (or in one of the other ways [described here in my profile@GitHub](https://github.com/marq24)) – thank you to those who already do – you're all amazing!
+-->
+<!--
+## Willkommen zur FordConnect Query Integration
+Dies ist eine [alternative Integration zu FordPass](https://github.com/marq24/ha-fordpass) und nutzt die FordConnect Query API. Diese API bietet __read.only__ Zugriff auf Deine Fahrzeugdaten.
+### Voraussetzungen
+- Dein Fahrzeug muss über die neueste On-Board-Modem-Funktionalität verfügen und bei der FordPass™-Anwendung registriert/autorisiert sein.
+- Einen API-Schlüssel, der zuvor im EU-Ford-Entwicklerportal registriert wurde.
+
+Weitere Informationen findest Du [im _Application Registration Guide_. Dort findest Du auch eine Schritt-für-Schritt-Anleitung](https://github.com/marq24/ha-fordconnect-query/blob/main/docs/REGISTER_APPLICATION.md) zur Registrierung eines solchen Schlüssels.
+### Benötigst Du weitere Hilfe?
+Alle weiteren Einrichtungsdetails findest Du [hier im _Integration Setup Guide_](https://github.com/marq24/ha-fordconnect-query/blob/main/docs/CONFIGURE_INTEGRATION.md).
+### Abschließender Hinweis in eigener Sache
+Wenn Du diese Integration nützlich findest, dann bitte denk doch bitte darüber nach, ob Du mich nicht vielleicht als GitHub-Projekt-Sponsor (oder auf eine der anderen in [meinem Profil@GitHub](https://github.com/marq24) beschriebenen Art) unerstützen möchtest – vielen Dank an die Menschen, die dies bereits tun – Ihr seid großartig!
+-->
+
 
 <!--
 > [!NOTE]  
@@ -78,7 +106,7 @@ https://raw.githubusercontent.com/marq24/ha-fordconnect-query/refs/heads/main/do
 1. In HA HACS, you need to add a new custom repository (via the 'three dots' menu in the top right corner).
 2. Enter https://github.com/marq24/ha-fordconnect-query as the repository URL (and select  the type `Integration`).
 3. After adding the new repository, you can search for `fordconnect` in the search bar.
-4. Install the 'correct' (aka 'this') fordconnect query integration (v2026.1.0 or higher).
+4. Install the 'correct' (aka 'this') FordConnect Query integration (v2026.1.0 or higher).
 6. Restart HA.
 
 ### Step 2. Setup the Integration
@@ -199,31 +227,11 @@ Based on these attributes, you can create your own template sensors or automatio
 
 | Type                | Sensor Name                                         | Petrol/Diesel | (P)HEV/BEV |
 |:--------------------|:----------------------------------------------------|:-------------:|:----------:|
-<!--
-| Button              | Remote Sync (Car with Ford backend)                 | ✔             | ✔          |
-| Button              | Local Sync (Ford backend with HA)                   | ✔             | ✔          |
-| Lock                | Lock/Unlock Vehicle[^1]                             | ✔             | ✔          |
-| Switch              | ~~Guard Mode (Only supported cars)~~                |               |            |
-| Button              | Start charging[^4]                                  |               | ✔          |
-| Switch              | PAUSE/UNPAUSE charging[^5]                          |               | ✔          |
-| Switch              | Auto SoftwareUpdates[^1]                            | ✔             | ✔          |
--->
 | DeviceTracker       | Vehicle Tracker[^1]                                 | ✔             | ✔          |
-<!--
-| Select              | Zone Lighting (experimental)[^1]                    | ✔             | ✔          |
-| Switch              | RC: Start (❄/☀)[^1][^2]                             | ✔             | ✔          |
-| Button              | RC: Extend Time[^1][^2]                             | ✔             | ✔          |
-| Select (was Number) | RC: Climate Temperature (❄/☀)[^1][^2]               | ✔             | ✔          |
-| Switch              | RC: Steering Wheel Heating[^1][^2]                  | ✔             | ✔          |
-| Select              | RC: Seat (❄/☀) front/rear & left/right[^1][^2][^3]  | ✔             | ✔          |
-| Switch              | RC: Rear Defrost[^1][^2]                            | ✔             | ✔          |
-| Switch              | RC: Windshield Heating[^1][^2]                      | ✔             | ✔          |
-| Select              | Target charge level(s)[^6]                          |               | ✔          |
--->
 
 [^1]: Must be supported by the vehicle. If not supported, the entity will not be available in the UI.
 [^2]: _RC_ stands for 'Remote Control'.
-[^3]: There are four controls — one for each seat. Depending on your vehicle configuration you can select 'Heating Level I-III' and 'Cooling Level I-III' for each seat individually. Please note that not all vehicles support the full set of featured (e.g., only heating) and/or that there might be only the front seats available.
+[^3]: There are four controls — one for each seat. Depending on your vehicle configuration, you can select 'Heating Level I-III' and 'Cooling Level I-III' for each seat individually. Please note that not all vehicles support the full set of featured (e.g., only heating) and/or that there might be only the front seats available.
 [^4]: The 'Start charging' button will only work with supporting charging stations (wallboxes) - e.g., Ford Charge Station Pro (FCSP), and only if the vehicle is plugged in. If the vehicle is not plugged in, the button will be disabled.
 [^5]: Once the charging process has been started, the switch allows you to pause and unpause the charging process. It's not possible to actually start a charging session via this switch — you must use the _EV Start_-button for this! The switch will be toggled to `ON` when the vehicle is plugged in and the wallbox has started to charge the car. When you toggle the switch `OFF`, the charging process will be paused, and when you toggle it `ON` again, the charging process will resume.
 [^6]: In FordPass™ App you can create _Target Charge Locations_ — Based on the previous DC charging locations (this functionality was also new for me).<br/>

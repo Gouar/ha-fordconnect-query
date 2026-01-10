@@ -8,7 +8,7 @@ body:
         Please follow this routine: 
         1. In Home Assistant go to `HACS`
         2. In the list of installed integrations search for `FordConnect`
-        3. Click on the 3-dot menu on the right side of the `FordConnect-Query Integration for Home Assistant - support for Ford vehicles in Europe (but not only Europe?) [optimized for EV's & EVCC].` integration list entry
+        3. Click on the 3-dot menu on the right side of the `FordConnect Query Integration for Home Assistant - support for Ford vehicles in Europe (but not only Europe?) [optimized for EV's & EVCC].` integration list entry
         4. Click on `Update Information`
         5. Note now that a new version is available
         6. Install the update
