@@ -1,15 +1,8 @@
 import logging
 import secrets
-
-from yarl import URL
+from typing import Final
 
 import homeassistant.helpers.config_entry_oauth2_flow as oauth2_flow
-from custom_components.fordconnect_query.const import (
-    DOMAIN,
-    STATE_LOOKUP_MAP,
-    FORD_AUTHORIZE_URL,
-    FORD_TOKEN_URL
-)
 from homeassistant.components.application_credentials import (
     AuthorizationServer,
     AuthImplementation,
@@ -19,8 +12,17 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.config_entry_oauth2_flow import (
     LocalOAuth2Implementation,
 )
+from yarl import URL
+
+from custom_components.fordconnect_query.const import (
+    DOMAIN,
+    FORD_AUTHORIZE_URL,
+    FORD_TOKEN_URL
+)
 
 _LOGGER = logging.getLogger(__name__)
+
+STATE_LOOKUP_MAP:Final = "secure_state-to-flow_id-map"
 
 class FordConQOAuth2Implementation(LocalOAuth2Implementation):
 

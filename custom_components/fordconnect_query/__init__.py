@@ -28,12 +28,11 @@ from homeassistant.util.unit_system import UnitSystem
 from custom_components.fordconnect_query.const import (
     DOMAIN,
     CONF_VIN,
-    FORD_TELEMETRY_URL,
-    FORD_VEH_HEALTH_URL,
-    LAST_TOKEN_KEY,
+    FORD_TELEMETRY_TEMP,
+    FORD_VEH_HEALTH_TEMP,
     TRANSLATIONS,
     DEFAULT_SCAN_INTERVAL,
-    CONF_GARAGE_DATA
+    CONF_GARAGE_DATA, FORD_FCON_QUERY_BASE_URL
 )
 from custom_components.fordconnect_query.const_shared import (
     CONF_PRESSURE_UNIT,
@@ -61,6 +60,7 @@ CONFIG_SCHEMA:Final = vol.Schema({DOMAIN: vol.Schema({})}, extra=vol.ALLOW_EXTRA
 #PLATFORMS = ["button", "lock", "number", "sensor", "switch", "select", "device_tracker"]
 PLATFORMS:Final = ["sensor", "device_tracker"]
 
+LAST_TOKEN_KEY:Final = "last_token"
 DATA_STORAGE_KEY:Final = "temp_data_storage"
 TIME_KEY:Final = "time"
 DATA_KEY:Final = "data"
@@ -482,14 +482,15 @@ class FordConQDataCoordinator(DataUpdateCoordinator):
         return self.data
 
     async def request_telemetry(self):
-        telemetry_data = await self.__request_data(FORD_TELEMETRY_URL, "telemetry")
+        telemetry_data = await self.__request_data(FORD_TELEMETRY_TEMP, "telemetry")
         return telemetry_data
 
     async def request_health(self):
-        health_data = await self.__request_data(FORD_VEH_HEALTH_URL, "health")
+        health_data = await self.__request_data(FORD_VEH_HEALTH_TEMP, "health")
         return health_data
 
-    async def __request_data(self, url:str, type:str):
+    async def __request_data(self, url_template:str, type:str):
+        url = url_template.format(base_url=FORD_FCON_QUERY_BASE_URL)
         res = await self._session.async_request(
             method="get",
             url=url

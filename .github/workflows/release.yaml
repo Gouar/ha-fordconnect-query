@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    name: Release fordpass
+    name: Release fordconnect_query
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -29,17 +29,17 @@ jobs:
       #    version="${version#v}"            # remove leading 'v' if present
       #    yq e -P -o=json \
       #      -i ".version = \"${version}\"" \
-      #      "${{ github.workspace }}/custom_components/fordpass/manifest.json"
+      #      "${{ github.workspace }}/custom_components/fordconnect_query/manifest.json"
 
       # Step 4: Create a ZIP archive of the component directory
       - name: 📦 Create zipped release package
         shell: bash
         run: |
-          cd "${{ github.workspace }}/custom_components/fordpass"
-          zip fordpass.zip -r ./
+          cd "${{ github.workspace }}/custom_components/fordconnect_query"
+          zip fordconnect_query.zip -r ./
 
       # Step 5: Upload ZIP as a release asset (for HACS)
       - name: ⬆️ Upload zip to release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ github.workspace }}/custom_components/fordpass/fordpass.zip
+          files: ${{ github.workspace }}/custom_components/fordconnect_query/fordconnect_query.zip

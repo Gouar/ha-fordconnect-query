@@ -15,11 +15,13 @@ from custom_components.fordconnect_query.const import (
     DOMAIN,
     CONFIG_VERSION,
     CONFIG_MINOR_VERSION,
-    FORD_GARAGE_URL,
+    FORD_GARAGE_TEMP,
+    FORD_FCON_QUERY_BASE_URL,
     CONF_VIN,
     CONF_TITLE,
     CONF_GARAGE_DATA,
-    DEFAULT_SCAN_INTERVAL, MIN_SCAN_INTERVAL
+    DEFAULT_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
 )
 from custom_components.fordconnect_query.const_shared import (
     DEFAULT_PRESSURE_UNIT,
@@ -69,7 +71,7 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
 
     async def get_garage(self, session, access_token:str):
         res = await session.get(
-            FORD_GARAGE_URL,
+            FORD_GARAGE_TEMP.format(base_url=FORD_FCON_QUERY_BASE_URL),
             headers={
                 "Authorization": f"Bearer {access_token}",
             },

@@ -216,7 +216,7 @@ This service will contact the modem in the vehicle and request to sync data betw
 
 Many sensors provide more detail information as attributes of sensors. These attributes are available by expanding the panel at the bottom of the sensor view (marked by green border).
 
-![image](./images/012.png)
+![image](https://raw.githubusercontent.com/marq24/ha-fordpass/refs/heads/main/images/012.png)
 
 You can find more details about the individual sensors when accessing your HA via `http://[your-ha-ip-here]/developer-tools/state` and then selecting the individual sensor from the dropdown list, then you can see all the attributes of the sensor.
 

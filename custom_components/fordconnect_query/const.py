@@ -16,19 +16,21 @@ CONF_TITLE = "config_title"
 DEFAULT_SCAN_INTERVAL: Final = 60
 MIN_SCAN_INTERVAL: Final = 30
 
-LAST_TOKEN_KEY = "last_token"
-STATE_LOOKUP_MAP = "secure_state-to-flow_id-map"
+FORD_BASE_URL: Final = "https://api.vehicle.ford.com"
+FORD_AUTHORIZE_URL: Final = f"{FORD_BASE_URL}/fcon-public/v1/auth/init"
+FORD_TOKEN_URL: Final     = f"{FORD_BASE_URL}/dah2vb2cprod.onmicrosoft.com/oauth2/v2.0/token?p=B2C_1A_FCON_AUTHORIZE"
 
-FORD_AUTHORIZE_URL: Final = "https://api.vehicle.ford.com/fcon-public/v1/auth/init"
-FORD_TOKEN_URL: Final     = "https://api.vehicle.ford.com/dah2vb2cprod.onmicrosoft.com/oauth2/v2.0/token?p=B2C_1A_FCON_AUTHORIZE"
+FORD_FCON_QUERY_ENDPOINT: Final = "/fcon-query/v1"
+FORD_FCON_QUERY_BASE_URL: Final = f"{FORD_BASE_URL}{FORD_FCON_QUERY_ENDPOINT}"
 
-FORD_GARAGE_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/garage"
-FORD_TELEMETRY_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/telemetry"
-FORD_VEH_HEALTH_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/vehicle-health/alerts"
-FORD_WALLBOX_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/wallbox"
-FORD_EV_DEPARTURE_TIMES_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/electric/departure-times"
-FORD_EV_CHARGE_SCHEDULES_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/electric/charge-schedules"
-FORD_EV_SESSIONS_URL: Final = "https://api.vehicle.ford.com/fcon-query/v1/fccs?startDate={start}&endDate={end}"
+# the API Endpoint templates
+FORD_GARAGE_TEMP: Final              = "{base_url}/garage"
+FORD_TELEMETRY_TEMP: Final           = "{base_url}/telemetry"
+FORD_VEH_HEALTH_TEMP: Final          = "{base_url}/vehicle-health/alerts"
+FORD_WALLBOX_TEMP: Final             = "{base_url}/wallbox"
+FORD_EV_DEPARTURE_TIMES_TEMP: Final  = "{base_url}/electric/departure-times"
+FORD_EV_CHARGE_SCHEDULES_TEMP: Final = "{base_url}/electric/charge-schedules"
+FORD_EV_SESSIONS_TEMP: Final         = "{base_url}/fccs?startDate={start}&endDate={end}"
 
 TRANSLATIONS: Final = {
     "de":{
