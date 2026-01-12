@@ -71,15 +71,8 @@ Wenn Du diese Integration nützlich findest, dann bitte denk doch bitte darüber
 > [!NOTE]
 > My main motivation comes from the fact that I have developed the [FordPass Integration](https://github.com/marq24/ha-fordpass), and it's totally unknown how long this is continued to work.
 > 
-> YES I am aware that the FordConnect Query Integration has __ONLY READ__ capabilities. But that's IMHO way better to be able to get to the vehicle sensor data (when the FordPass Integration will stop working).
+> YES, I am aware that the FordConnect Query Integration has __ONLY READ__ capabilities. But that's IMHO way better to be able to get to the vehicle sensor data (when the FordPass Integration will stop working).
 > 
----
-
-> [!IMPORTANT]
-> ## OAuth Integration Setup 
-> 1. You need to register a Ford developer account to be able to use this integration.
-> 2. You need to register a Ford application in the __EU__ developer portal. 
-> 3. You need to configure OAuth Application Credentials in HA that can be used by this integration. (will be done automatically via the integration setup)
 ---
 
 ## Sample panel
@@ -88,33 +81,68 @@ https://raw.githubusercontent.com/marq24/ha-fordconnect-query/refs/heads/main/do
 https://raw.githubusercontent.com/marq24/ha-fordconnect-query/refs/heads/main/docs/sample-panel.png)
 
 ## Requirements
-1. Your car must have the latest onboard modem functionality and have been registered/authorized with the FordPass™/The Lincoln Way™ application.<br/>
-2. You need a Home Assistant instance (v2025.11 or higher) with the [HACS](https://hacs.xyz/docs/use/#getting-started-with-hacs) custom integration installed.<br/>
-3. [You __must have registered an application with Ford__](./docs/REGISTER_APPLICATION.md).
+1. Your car must have the latest on-board modem functionality and have been registered/authorized with the FordPass™/The Lincoln Way™ application.<br/>
+2. You need a Home Assistant instance (v2025.11 or higher) – additionally, it's also highly recommended to have the [HACS](https://hacs.xyz/docs/use/#getting-started-with-hacs) custom integration installed.<br/>
+3. [You __must have registered an application with Ford in the EU developer portal__](./docs/REGISTER_APPLICATION.md). [Therefore, you need to register a Ford developer account].
+4. You need to configure OAuth Application Credentials in HA that can be used by this integration. (will be done automatically via the integration setup)
 
 > [!IMPORTANT]
-> This is a HACS custom integration — not a Home Assistant Add-on. Don't try to add this repository as an add-on in Home Assistant.
-> 
-> The IMHO simplest way to install this integration is via the two buttons below ('_OPEN HACS REPOSITORY ON MY HA_' and '_ADD INTEGRATION TO MY HA_').
+> ### Additional information about Application Registration at Ford and your local HA instance.
+> This integration makes use of OAuth2 to authenticate with Ford and retrieve data from the Ford backend systems.
+>
+> For this process an initial exchange between your local HA instance and the Ford backend systems is required. Since typically your HA instance is not directly accessible from the internet, this exchange will to be done via a secure intermediary system. This system is `https://my.home-assistant.io` (and this domain must be registred with the Ford backend system [as explained in the quide](./docs/REGISTER_APPLICATION.md)).
+>
+> Ford will redirect your final granted access code to this domain, and then my.home-assistant.io will finally forward this code to your local (not reachable via the public internet) HA instance.
+>
+> __So the chain is: Ford backend can reach my.home-assistant.io__ (via public internet)__, and then my.home-assistant.io can reach your HA instance__ (in your private network)__.__
+>
+> Even __if__ your HA instance might be reachable from the public internet, you still __must__ use my.home-assistant.io as an intermediary system for the OAuth2 process, therefore, you __must__ use the documented URL (`https://my.home-assistant.io/redirect/oauth`) when register your application with Ford development portal.
+>
+> __Please don't think too complicated:__ Use your local address of your HA instance when setting up this integration.
+
 
 ## Installation Instructions
 
-### Step 1. HACS add the Integration
+> [!TIP]
+> The IMHO simplest way to install this integration is via the two blue buttons below ('_OPEN HACS REPOSITORY ON MY HA_' and '_ADD INTEGRATION TO MY HA_').
+
+### Step 1. Install the integration (on your Home Assistant)
+
+Installing the integration on your Home Assistant instance can be done either via HACS (<u>H</u>ome<u>A</u>ssistant<u>C</u>ommunity<u>S</u>tore) or manually.
+
+#### Option A: via HACS
+
+##### Preparation
+- Install [Home Assistant Community Store (HACS)](https://hacs.xyz/)
+
+##### Installation via HACS
 
 [![Open your Home Assistant instance and adding repository to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=marq24&repository=ha-fordconnect-query&category=integration)
 
 1. In HA HACS, you need to add a new custom repository (via the 'three dots' menu in the top right corner).
 2. Enter `https://github.com/marq24/ha-fordconnect-query` as the _Repository URL_ and select the _Type_ `Integration`.
+
+> [!IMPORTANT]
+> This is a HACS __custom integration__ — not a Home Assistant __Add-on__. Don't try to add this repository as an add-on in Home Assistant.
+>
+
 3. After adding the new repository, you can search for `fordconnect` in the search bar.
 4. Install the 'correct' (aka 'this') FordConnect Query integration (v2026.1.0 or higher).
-6. Restart HA.
+5. Restart HA.
+
+
+#### Option B: manual steps
+
+- Copy all files from `custom_components/fordconnect_query/` to `custom_components/fordconnect_query/` inside your config Home Assistant directory.
+- Restart Home Assistant to install all dependencies
+
 
 ### Step 2. Set up the Integration
 
 [![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=fordconnect_query)
 
-7. After the restart go to  `Settings` -> `Devices & Services` area
-8. Add the new integration `FordConnect Query` and [follow the instructions provided in a seperate document in this repository](./docs/CONFIGURE_INTEGRATION.md).
+6. After the restart go to  `Settings` -> `Devices & Services` area
+7. Add the new integration `FordConnect Query` and [follow the instructions provided in a seperate document in this repository](./docs/CONFIGURE_INTEGRATION.md).
 
 
 ## Usage with EVCC

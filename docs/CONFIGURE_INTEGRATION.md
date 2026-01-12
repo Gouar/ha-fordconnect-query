@@ -25,27 +25,27 @@ or
 ### Continue with the configuration
 The first thing you will be requested to do is to configure the application credentials in Home Assistant for the integration. Once this is done, your credentials will be stored by HA and can be used by the integration at any time.
 
-![img005.png](img005.png)<br/>
+<table><tr><td><img src="img005.png" width="375" /></td></tr></table><br/>
 Specify any name for the credentials, and then pase your clientId and clientSecret that you have received from the Ford developer portal for your registered application.
 
 Once the credentials are stored, you will be instantly redirected to the Ford login page in a second browser window, where you should log in with your Ford account.<br/>
-![img006a.png](img006a.png)
+<table><tr><td><img src="img006a.png" width="375" /></td></tr></table>
 
 If the login is successful, you should see a screen like this one:<br/>
-![img006b.png](img006b.png)
+<table><tr><td><img src="img006b.png" width="375" /></td></tr></table>
 
 Select the radio button and scroll down to the _Consent_ Button and press it...
 
 If you have __multiple vehicles__ registered with your Ford account, then in this screen you can select the vehicle you want to connect to HA (by selecting the wanted vehicle's radio button).<br/>
-![img006c.png](img006c.png)
+<table><tr><td><img src="img006c.png" width="375" /></td></tr></table>
 
 #### When you receive the following error message after pressing the _Consent_ button... 
-![img007.png](img007.png)<br/>
+<table><tr><td><img src="img007.png" width="375" /></td></tr></table><br/>
 This means, then the global deployment of your registered application did not complete yet (when you created it in the Ford developer portal, there was a message that this might take up to 2h to complete – so please be patient). And try the configuration of the FordConnect Query Integration in HA later.
 
 #### When your app is successfully configured &amp; registered with Ford, then...
 your browser session will be redirected to the https://my.home-assistant.io website and going to display a screen like this one here:<br/>
-![img008.png](img008.png)<br/>
+<table><tr><td><img src="img008.png" width="375" /></td></tr></table><br/>
 You should check if the currently configured HA Instance URL is the one you are currently using (is the URL from which you initially started the configuration of the vehicle). Again look at the area marked with the purple box (here in this example I am running my test/integration HA on `http://localhost:8123`).
 
 If this URL is not correct, then press the _pencil_ icon and specify the correct URL.
