@@ -8,6 +8,7 @@ from homeassistant import config_entries
 from homeassistant.config_entries import ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_ACCESS_TOKEN, CONF_NAME, CONF_TOKEN, CONF_SCAN_INTERVAL, CONF_USERNAME
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
@@ -42,6 +43,18 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
     def logger(self) -> logging.Logger:
         return _LOGGER
 
+    # we need to overwrite the async_step_creation to capture a possible 'abort' from the parent class
+    async def async_step_creation(self, user_input: dict[str, Any] | None = None) -> config_entries.ConfigFlowResult:
+        _LOGGER.info(f"async_step_creation(): called with user_input: {user_input}")
+        response = await super().async_step_creation(user_input)
+        if response.get("type", None) == FlowResultType.ABORT:
+            _LOGGER.info(f"async_step_creation(): got an FlowResultType.ABORT response: {response}")
+            reason = response.get("reason", "UNKNOWN reason")
+            return self.async_abort(reason="oauth_error_final", description_placeholders={"error_info": reason})
+        else:
+            _LOGGER.info(f"async_step_creation(): got response: {response}")
+            return response
+
     async def async_oauth_create_entry(self, data):
         _LOGGER.debug(f"async_oauth_create_entry() we can finally create the entry, since oAuth has returned a token")
         access_token = data.get(CONF_TOKEN, {}).get(CONF_ACCESS_TOKEN, None)
@@ -52,7 +65,7 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
             #         'modelName': 'Mustang Mach-E', 'modelCode': 'VLGW', 'modelYear': '2023', 'tcuEnabled': 1,
             #         'make': 'Ford', 'ngSdnManaged': 1, 'vehicleAuthorizationIndicator': 1, 'engineType': 'BEV'}
 
-            if "vin" in garage_data:
+            if garage_data and "vin" in garage_data:
                 entry_data = {
                     **data,
                     CONF_VIN: garage_data["vin"],
@@ -67,7 +80,7 @@ class FordConQConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, dom
                 return self.async_abort(reason="No VIN received from oAuth provider")
         else:
             _LOGGER.error("async_oauth_create_entry(): No access token received from oAuth provider")
-            return self.async_abort(reason="No access_token from oAuth provider")
+            return self.async_abort(reason="oauth_unauthorized")
 
     async def get_garage(self, session, access_token:str):
         res = await session.get(

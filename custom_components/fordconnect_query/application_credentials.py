@@ -3,6 +3,7 @@ import secrets
 from typing import Final
 
 import homeassistant.helpers.config_entry_oauth2_flow as oauth2_flow
+from aiohttp import ClientError
 from homeassistant.components.application_credentials import (
     AuthorizationServer,
     AuthImplementation,
@@ -56,13 +57,13 @@ class FordConQOAuth2Implementation(LocalOAuth2Implementation):
             "grant_type": "authorization_code",
             "redirect_uri": self.redirect_uri,
         }
-        data = await self._token_request(request_data)
-        if data is not None:
-            _LOGGER.info(f"async_resolve_external_data(): got token response with {len(data)} entries")
-            return data
-        else:
-            _LOGGER.error(f"async_resolve_external_data(): No token data received from oAuth provider for {external_data}")
-            return None
+        try:
+            response = await self._token_request(request_data)
+            _LOGGER.info(f"async_resolve_external_data(): got _token_request response: {response}")
+            return response
+        except ClientError as err:
+            _LOGGER.error(f"async_resolve_external_data(): failed to get token: {err}")
+            return {}
 
 # To make the standard /auth/external/callback work with our short state,
 # we wrap the decoder.

@@ -84,7 +84,7 @@ class FordPassSensor(FordPassEntity, SensorEntity, RestoreEntity):
 
     def __init__(self, coordinator:FordConQDataCoordinator, entity_description:ExtSensorEntityDescription):
         # make sure that we set the device class for battery sensors [see #89]
-        if (coordinator.has_ev_soc and entity_description.tag == Tag.SOC) or (not coordinator.has_ev_soc and entity_description.tag == Tag.BATTERY):
+        if (coordinator.has_ev_soc and entity_description.tag == Tag.SOC) or (not coordinator.supportFuel and entity_description.tag == Tag.FUEL):
             entity_description = replace(
                 entity_description,
                 device_class=SensorDeviceClass.BATTERY
