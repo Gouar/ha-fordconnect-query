@@ -5,10 +5,6 @@ from numbers import Number
 from re import sub
 from typing import Final, Iterable
 
-from homeassistant.const import UnitOfLength, UnitOfTemperature, UnitOfPressure
-from homeassistant.util import dt
-from homeassistant.util.unit_system import UnitSystem
-
 from custom_components.fordconnect_query.const_shared import (
     ZONE_LIGHTS_VALUE_ALL_ON,
     ZONE_LIGHTS_VALUE_FRONT,
@@ -29,6 +25,9 @@ from custom_components.fordconnect_query.const_shared import (
     HONK_AND_FLASH,
     DAYS_MAP
 )
+from homeassistant.const import UnitOfLength, UnitOfTemperature, UnitOfPressure
+from homeassistant.util import dt
+from homeassistant.util.unit_system import UnitSystem
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -329,6 +328,7 @@ class FordpassDataHandler:
                 attrs["panicAlarmStatus"] = val
         return attrs or None
 
+
     # DOOR_LOCK state
     def get_door_lock_state(data, prev_state=None):
         # EXAMPLE data:
@@ -463,6 +463,22 @@ class FordpassDataHandler:
         else:
             return VEHICLE_LOCK_STATE_UNLOCKED
 
+    def get_door_lock_attrs(data, units:UnitSystem):
+        data_metrics = FordpassDataHandler.get_metrics(data)
+        attrs = {}
+        for a_door in data_metrics.get("doorLockStatus", []):
+            if "vehicleSide" in a_door:
+                if "vehicleDoor" in a_door and a_door['vehicleDoor'].upper() == "UNSPECIFIED_FRONT":
+                    attrs[FordpassDataHandler.to_camel(a_door['vehicleSide']+" FRONT")] = a_door['value']
+                elif "vehicleDoor" in a_door and a_door['vehicleDoor'].upper() == "UNSPECIFIED_REAR":
+                    attrs[FordpassDataHandler.to_camel(a_door['vehicleSide']+" REAR")] = a_door['value']
+                else:
+                    attrs[FordpassDataHandler.to_camel(a_door['vehicleDoor'])] = a_door['value']
+            else:
+                attrs[FordpassDataHandler.to_camel(a_door["vehicleDoor"])] = a_door['value']
+        return attrs
+
+
     # DOOR_STATUS state + attributes
     def get_door_status_state(data, prev_state=None):
         data_metrics = FordpassDataHandler.get_metrics(data)
@@ -480,7 +496,9 @@ class FordpassDataHandler:
         for a_door in data_metrics.get("doorStatus", []):
             if "vehicleSide" in a_door:
                 if "vehicleDoor" in a_door and a_door['vehicleDoor'].upper() == "UNSPECIFIED_FRONT":
-                    attrs[FordpassDataHandler.to_camel(a_door['vehicleSide'])] = a_door['value']
+                    attrs[FordpassDataHandler.to_camel(a_door['vehicleSide']+" FRONT")] = a_door['value']
+                elif "vehicleDoor" in a_door and a_door['vehicleDoor'].upper() == "UNSPECIFIED_REAR":
+                    attrs[FordpassDataHandler.to_camel(a_door['vehicleSide']+" REAR")] = a_door['value']
                 else:
                     attrs[FordpassDataHandler.to_camel(a_door['vehicleDoor'])] = a_door['value']
             else:

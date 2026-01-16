@@ -4,6 +4,14 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Final, NamedTuple, Callable, Any
 
+from custom_components.fordpass.fordpass_handler import FordpassDataHandler, UNSUPPORTED
+
+from custom_components.fordconnect_query.const_shared import (
+    RCC_TEMPERATURES_CELSIUS,
+    ZONE_LIGHTS_OPTIONS,
+    RCC_SEAT_OPTIONS_FULL,
+    ELVEH_TARGET_CHARGE_OPTIONS
+)
 from homeassistant.components.button import ButtonEntityDescription
 from homeassistant.components.number import NumberEntityDescription, NumberMode, NumberDeviceClass
 from homeassistant.components.select import SelectEntityDescription
@@ -19,14 +27,6 @@ from homeassistant.const import (
 )
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.unit_system import UnitSystem
-
-from custom_components.fordconnect_query.const_shared import (
-    RCC_TEMPERATURES_CELSIUS,
-    ZONE_LIGHTS_OPTIONS,
-    RCC_SEAT_OPTIONS_FULL,
-    ELVEH_TARGET_CHARGE_OPTIONS
-)
-from custom_components.fordconnect_query.fordpass_handler import FordpassDataHandler, UNSUPPORTED
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -121,8 +121,8 @@ class Tag(ApiKey, Enum):
     ##################################################
     DOOR_LOCK           = ApiKey(key="doorlock",
                                  state_fn=lambda data, prev_state: FordpassDataHandler.get_door_lock_state(data, None),
+                                 attrs_fn=FordpassDataHandler.get_door_lock_attrs,
                                  press_fn=FordpassDataHandler.lock_vehicle)
-
     # SWITCHES
     ##################################################
     # for historic reasons the key is "ignition" (even if it's the remote_start switch)
@@ -778,6 +778,13 @@ SENSORS = [
         skip_existence_check=True,
         has_entity_name=True,
         entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    ExtSensorEntityDescription(
+        tag=Tag.DOOR_LOCK,
+        key=Tag.DOOR_LOCK.key,
+        icon="mdi:car-door-lock",
+        has_entity_name=True,
+        entity_registry_enabled_default=True
     ),
 ]
 
