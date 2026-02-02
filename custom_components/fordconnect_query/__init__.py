@@ -560,7 +560,7 @@ class FordPassEntity(CoordinatorEntity):
             self._attr_name_addon = description.name_addon
 
         self.coordinator: FordConQDataCoordinator = coordinator
-        self.entity_id = f"{entity_type}.fcq_{self.coordinator._vin.lower()}_{a_tag.key}"
+        self.entity_id = f"{entity_type}.fcq_{self.coordinator._vin.lower()}_{a_tag.key}".lower()
         self._tag = a_tag
 
     def _name_internal(self, device_class_name: str | None, platform_translations: dict[str, Any], ) -> str | UndefinedType | None:
